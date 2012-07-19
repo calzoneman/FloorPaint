@@ -46,6 +46,16 @@ Level.prototype.visit = function(x, y) {
     this.map[y * this.width + x] = 1;
 };
 
+/* Check if the game has been won */
+Level.prototype.checkWin = function() {
+    for(var i = 0; i < this.width * this.height; i++) {
+        if(this.map[i] == 0) {
+            return false;
+        }
+    }
+    return true;
+};
+
 /* Game constructor */
 var Game = function() {
     this.level = new Level(16, 16);
@@ -113,5 +123,8 @@ Game.prototype.keypress = function() {
             break;
     }
     this.level.visit(this.posx, this.posy);
+    if(this.level.checkWin()) {
+        document.getElementById('win').innerHTML = "You Win!";
+    }
 };
 document.onkeydown = function() { game.keypress() };
