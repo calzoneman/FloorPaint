@@ -5,8 +5,23 @@ var game;
 function init() {
     canvas = document.getElementById('game');
     ctx = canvas.getContext('2d');
+    var keyHandler = function(ev) { game.keypress(ev) };
+    if(window.document.addEventListener) {
+        window.document.addEventListener("keydown", keyHandler, false);
+    }
+    else {
+        window.document.attachEvent("onkeydown", keyHandler);
+    }
     game = new Game();
+    newlevel();
     setInterval(function() { game.render() }, 1000 / 60);
+}
+
+function newlevel() {
+    game.level.generate();
+    game.posx = 0;
+    game.posy = 0;
+    game.level.visit(0, 0);
 }
 
 /* Level constructor */
@@ -14,16 +29,18 @@ var Level = function(width, height) {
     this.width = width;
     this.height = height;
     this.map = [];
-    this.generate();
 };
 
 /* Level generation routine */
 Level.prototype.generate = function() {
-    this.genRectangle();
+    this.genNoise();
+    while(this.impossible()) {
+        this.genNoise();
+    }
 };
 
-/* Rectangular Level Generation */
-Level.prototype.genRectangle = function() {
+/* Random Level Generation */
+Level.prototype.genNoise = function() {
     var blockfreq = Math.random() * 0.33;
     for(var i = 0; i < this.width; i++) {
         for(var j = 0; j < this.height; j++) {
@@ -34,6 +51,33 @@ Level.prototype.genRectangle = function() {
             this.map[j * this.width + i] = t;
         }
     }
+};
+
+
+Level.prototype.impossible = function() {
+    var trapped = function(level, x, y) {
+        var x1 = x-1;
+        var x2 = x+1;
+        var y1 = y-1;
+        var y2 = y+1;
+
+        var count = 0;
+        if(x1 < 0 || !level.validMove(x1, y)) count++;
+        if(x2 >= level.width || !level.validMove(x2, y)) count++;
+        if(y1 < 0 || !level.validMove(x, y1)) count++;
+        if(y2 >= level.height || !level.validMove(x, y2)) count++;
+
+        return count > 2;
+    };
+
+    for(var i = 0; i < this.width; i++) {
+        for(var j = 0; j < this.width; j++) {
+            if(trapped(this, i, j)) {
+                return true;
+            }
+        }
+    }
+    return false;
 };
 
 /* Determine if a square is valid */
@@ -65,9 +109,28 @@ Level.prototype.checkWin = function() {
     return true;
 };
 
+/* Reset the map */
+Level.prototype.reset = function() {
+    for(var i = 0; i < this.width * this.height; i++) {
+        if(this.map[i] == 1) {
+            this.map[i] = 0;
+        }
+    }
+};
+
+/* Clone the map */
+Level.prototype.clone = function() {
+    var lvl = new Level(this.width, this.height);
+
+    for(var i = 0; i < this.width * this.height; i++) {
+        lvl.map[i] = this.map[i];
+    }
+    return lvl;
+};
+
 /* Game constructor */
 var Game = function() {
-    this.level = new Level(16, 16);
+    this.level = new Level(8, 8);
     this.posx = 0;
     this.posy = 0;
     this.level.visit(0, 0);
@@ -105,8 +168,8 @@ const K_RIGHT = 39;
 const K_DOWN = 40;
 
 /* Game input handling */
-Game.prototype.keypress = function() {
-    var key = event.keyCode;
+Game.prototype.keypress = function(ev) {
+    var key = ev.keyCode;
     switch(key) {
         case K_LEFT:
             if(this.level.validMove(this.posx-1, this.posy)) {
@@ -136,4 +199,3 @@ Game.prototype.keypress = function() {
         document.getElementById('win').innerHTML = "You Win!";
     }
 };
-document.onkeydown = function() { game.keypress() };
