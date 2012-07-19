@@ -19,10 +19,19 @@ var Level = function(width, height) {
 
 /* Level generation routine */
 Level.prototype.generate = function() {
+    this.genRectangle();
+};
+
+/* Rectangular Level Generation */
+Level.prototype.genRectangle = function() {
+    var blockfreq = Math.random() * 0.33;
     for(var i = 0; i < this.width; i++) {
         for(var j = 0; j < this.height; j++) {
-            // Placeholder
-            this.map[j * this.width + i] = 0;
+            var t = 0;
+            if(Math.random() < blockfreq) {
+                t = 2;
+            }
+            this.map[j * this.width + i] = t;
         }
     }
 };
