@@ -27,11 +27,31 @@ Level.prototype.generate = function() {
     }
 };
 
+/* Determine if a square is valid */
+Level.prototype.validMove = function(x, y) {
+    if(x < 0 || x >= this.width || y < 0 || y >= this.height) {
+        return false;
+    }
+    if(this.map[y * this.width + x] != 0) {
+        return false;
+    }
+    return true;
+};
+
+/* Visit a square */
+Level.prototype.visit = function(x, y) {
+    if(x < 0 || x >= this.width || y < 0 || y >= this.height) {
+        return;
+    }
+    this.map[y * this.width + x] = 1;
+};
+
 /* Game constructor */
 var Game = function() {
     this.level = new Level(16, 16);
     this.posx = 0;
     this.posy = 0;
+    this.level.visit(0, 0);
 };
 
 /* Game rendering routine */
@@ -43,6 +63,9 @@ Game.prototype.render = function() {
             switch(t) {
                 case 0:
                     color = "#0000FF";
+                    break;
+                case 1:
+                    color = "#007700";
                     break;
                 default:
                     color = "#000000";
@@ -67,27 +90,28 @@ Game.prototype.keypress = function() {
     var key = event.keyCode;
     switch(key) {
         case K_LEFT:
-            if(this.posx > 0) {
+            if(this.level.validMove(this.posx-1, this.posy)) {
                 this.posx--;
             }
             break;
         case K_RIGHT:
-            if(this.posx < this.level.width-1) {
+            if(this.level.validMove(this.posx+1, this.posy)) {
                 this.posx++;
             }
             break;
         case K_UP:
-            if(this.posy > 0) {
+            if(this.level.validMove(this.posx, this.posy-1)) {
                 this.posy--;
             }
             break;
         case K_DOWN:
-            if(this.posy < this.level.height-1) {
+            if(this.level.validMove(this.posx, this.posy+1)) {
                 this.posy++;
             }
             break;
         default:
             break;
-        }
+    }
+    this.level.visit(this.posx, this.posy);
 };
 document.onkeydown = function() { game.keypress() };
