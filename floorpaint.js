@@ -22,6 +22,7 @@ function newlevel() {
     game.posx = 0;
     game.posy = 0;
     game.level.visit(0, 0);
+    document.getElementById('win').innerHTML = "";
 }
 
 /* Level constructor */
