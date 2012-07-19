@@ -1,5 +1,6 @@
 var canvas, ctx;
 var game;
+const SIZE = 16;
 
 /* Called when the page loads */
 function init() {
@@ -165,7 +166,7 @@ Game.prototype.render = function() {
                 color = "#FF0000";
             }
             ctx.fillStyle = color;
-            ctx.fillRect(i * 16, j * 16, 16, 16);
+            ctx.fillRect(i * (SIZE + 1) + 1, j * (SIZE + 1) + 1, SIZE, SIZE);
         }
     }
 };
