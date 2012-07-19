@@ -55,3 +55,39 @@ Game.prototype.render = function() {
         }
     }
 };
+
+/* Some key constants */
+const K_LEFT = 37;
+const K_UP = 38;
+const K_RIGHT = 39;
+const K_DOWN = 40;
+
+/* Game input handling */
+Game.prototype.keypress = function() {
+    var key = event.keyCode;
+    switch(key) {
+        case K_LEFT:
+            if(this.posx > 0) {
+                this.posx--;
+            }
+            break;
+        case K_RIGHT:
+            if(this.posx < this.level.width-1) {
+                this.posx++;
+            }
+            break;
+        case K_UP:
+            if(this.posy > 0) {
+                this.posy--;
+            }
+            break;
+        case K_DOWN:
+            if(this.posy < this.level.height-1) {
+                this.posy++;
+            }
+            break;
+        default:
+            break;
+        }
+};
+document.onkeydown = function() { game.keypress() };
