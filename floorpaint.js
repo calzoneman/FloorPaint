@@ -43,51 +43,117 @@ var Level = function(width, height) {
 
 /* Level generation routine */
 Level.prototype.generate = function() {
-    this.genNoise();
+    var noiseAmt = 5;
+    this.genNoise(noiseAmt);
+    var tries = 0;
     while(this.impossible()) {
-        this.genNoise();
+        if(tries % 1000 == 0) {
+            alert("Tries: " + tries);
+        }
+        tries++;
+        this.genNoise(noiseAmt);
     }
+    //alert("Possible: " + !this.impossible());
 };
 
 /* Random Level Generation */
-Level.prototype.genNoise = function() {
-    var blockfreq = Math.random() * 0.33;
-    for(var i = 0; i < this.width; i++) {
-        for(var j = 0; j < this.height; j++) {
-            var t = 0;
-            if(Math.random() < blockfreq) {
-                t = 2;
-            }
-            this.map[j * this.width + i] = t;
+Level.prototype.genNoise = function(amt) {
+    for(var i = 0; i < this.width * this.height; i++) {
+        this.map[i] = 0;
+    }
+
+    for(var i = 0; i < amt; i++) {
+        var x = Math.floor(Math.random() * this.width);
+        var y = Math.floor(Math.random() * this.height);
+        if(this.map[y * this.width + x] == 2) {
+            i--;
+        }
+        else {
+            this.map[y * this.width + x] = 2;
+            console.log("Placed at " + x + ", " + y);
         }
     }
 };
 
-
+/* Check if the level is solvable */
 Level.prototype.impossible = function() {
-    var trapped = function(level, x, y) {
-        var x1 = x-1;
-        var x2 = x+1;
-        var y1 = y-1;
-        var y2 = y+1;
-
-        var count = 0;
-        if(x1 < 0 || !level.validMove(x1, y)) count++;
-        if(x2 >= level.width || !level.validMove(x2, y)) count++;
-        if(y1 < 0 || !level.validMove(x, y1)) count++;
-        if(y2 >= level.height || !level.validMove(x, y2)) count++;
-
-        return count > 2;
+    var pathEqual = function(p, q) {
+        if(p.length != q.length) {
+            return false;
+        }
+        for(var i = 0; i < p.length; i++) {
+            if(p[i][0] != q[i][0] || p[i][1] != q[i][1]) {
+                return false;
+            }
+        }
+        return true;
     };
 
-    for(var i = 0; i < this.width; i++) {
-        for(var j = 0; j < this.width; j++) {
-            if(trapped(this, i, j)) {
+    var clonePath = function(p) {
+        var tmp = [];
+        for(var i = 0; i < p.length; i++) {
+            tmp.push([p[i][0], p[i][1]]);
+        }
+        return tmp;
+    };
+
+    var pathExists = function(q, path, func) {
+        for(var i = 0; i < q.length; i++) {
+            if(func(q[i], path)) {
                 return true;
             }
         }
+        return false;
+    };
+
+    var stack = [];
+    var bad = [];
+    var lvl = this;//.clone();
+    var x = 0;
+    var y = 0;
+    stack.push([x, y]);
+    lvl.visit(x, y);
+    while(!lvl.checkWin() && stack.length > 0) {
+        var rand = Math.floor(Math.random() * 4);
+        if(pathExists(bad, stack, pathEqual)) {
+            var tmp = stack.pop();
+            lvl.map[y * lvl.width + x] = 0;
+            x = tmp[0];
+            y = tmp[1];
+        }
+        if(lvl.validMove(x+1, y)) {
+            x++;
+            lvl.visit(x, y);
+            stack.push([x, y]);
+        }
+        else iflvl.validMove(x-1, y)) {
+            x--;
+            lvl.visit(x, y);
+            stack.push([x, y]);
+        }
+        else if(lvl.validMove(x, y+1)) {
+            y++;
+            lvl.visit(x, y);
+            stack.push([x, y]);
+        }
+        else if(lvl.validMove(x, y-1)) {
+            y--;
+            lvl.visit(x, y);
+            stack.push([x, y]);
+        }
+        else if(!lvl.checkWin()) {
+            bad.push(clonePath(stack));
+            //for(var i = 0; i < Math.random() * stack.length; i++) {
+                lvl.map[y * lvl.width + x] = 0;
+                var tmp = stack.pop();
+                x = tmp[0];
+                y = tmp[1];
+            //}
+        }
+
     }
-    return false;
+
+    return !lvl.checkWin();
 };
 
 /* Determine if a square is valid */
