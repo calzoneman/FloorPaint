@@ -1,6 +1,9 @@
 var canvas, ctx;
 var game;
 const SIZE = 16;
+const TILE_EMPTY = 0;
+const TILE_PAINTED = 1;
+const TILE_WALL = 2;
 
 /* Called when the page loads */
 function init() {
@@ -58,17 +61,17 @@ Level.prototype.generate = function() {
 /* Random Level Generation */
 Level.prototype.genNoise = function(amt) {
     for(var i = 0; i < this.width * this.height; i++) {
-        this.map[i] = 0;
+        this.map[i] = TILE_EMPTY;
     }
 
     for(var i = 0; i < amt; i++) {
         var x = Math.floor(Math.random() * this.width);
         var y = Math.floor(Math.random() * this.height);
-        if(this.map[y * this.width + x] == 2) {
+        if(this.map[y * this.width + x] == TILE_WALL) {
             i--;
         }
         else {
-            this.map[y * this.width + x] = 2;
+            this.map[y * this.width + x] = TILE_WALL;
         }
     }
 };
@@ -86,7 +89,7 @@ Level.prototype.impossible = function() {
         var rand = Math.floor(Math.random() * 4);
         if(bad[JSON.stringify(stack)] !== undefined) {
             var tmp = stack.pop();
-            lvl.map[y * lvl.width + x] = 0;
+            lvl.map[y * lvl.width + x] = TILE_EMPTY;
             x = tmp[0];
             y = tmp[1];
         }
@@ -112,7 +115,7 @@ Level.prototype.impossible = function() {
         }
         else if(!lvl.checkWin()) {
             bad[JSON.stringify(stack)] = true;
-            lvl.map[y * lvl.width + x] = 0;
+            lvl.map[y * lvl.width + x] = TILE_EMPTY;
             var tmp = stack.pop();
             x = tmp[0];
             y = tmp[1];
@@ -128,7 +131,7 @@ Level.prototype.validMove = function(x, y) {
     if(x < 0 || x >= this.width || y < 0 || y >= this.height) {
         return false;
     }
-    if(this.map[y * this.width + x] != 0) {
+    if(this.map[y * this.width + x] != TILE_EMPTY) {
         return false;
     }
     return true;
@@ -139,13 +142,13 @@ Level.prototype.visit = function(x, y) {
     if(x < 0 || x >= this.width || y < 0 || y >= this.height) {
         return;
     }
-    this.map[y * this.width + x] = 1;
+    this.map[y * this.width + x] = TILE_PAINTED;
 };
 
 /* Check if the game has been won */
 Level.prototype.checkWin = function() {
     for(var i = 0; i < this.width * this.height; i++) {
-        if(this.map[i] == 0) {
+        if(this.map[i] == TILE_EMPTY) {
             return false;
         }
     }
@@ -155,8 +158,8 @@ Level.prototype.checkWin = function() {
 /* Reset the map */
 Level.prototype.reset = function() {
     for(var i = 0; i < this.width * this.height; i++) {
-        if(this.map[i] == 1) {
-            this.map[i] = 0;
+        if(this.map[i] == TILE_PAINTED) {
+            this.map[i] = TILE_EMPTY;
         }
     }
 };
@@ -186,10 +189,10 @@ Game.prototype.render = function() {
             var t = this.level.map[j * this.level.width + i];
             var color;
             switch(t) {
-                case 0:
+                case TILE_EMPTY:
                     color = "#0000FF";
                     break;
-                case 1:
+                case TILE_PAINTED:
                     color = "#007700";
                     break;
                 default:
