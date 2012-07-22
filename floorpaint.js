@@ -23,9 +23,9 @@ function init() {
 
 function newlevel() {
     game.level.generate();
-    game.posx = 0;
-    game.posy = 0;
-    game.level.visit(0, 0);
+    game.posx = game.level.startx;
+    game.posy = game.level.starty;
+    game.level.visit(game.posx, game.posy);
     document.getElementById('win').innerHTML = "";
 }
 
@@ -42,6 +42,8 @@ var Level = function(width, height) {
     this.width = width;
     this.height = height;
     this.map = [];
+    this.startx = 0;
+    this.starty = 0;
 };
 
 /* Level generation routine */
@@ -74,6 +76,17 @@ Level.prototype.genNoise = function(amt) {
             this.map[y * this.width + x] = TILE_WALL;
         }
     }
+
+    // Find the spawnpoint
+    this.startx = 0;
+    this.starty = 0;
+    while(this.map[this.starty * this.width + this.startx] != TILE_EMPTY) {
+        this.startx++;
+        if(this.startx >= this.width) {
+            this.startx = 0;
+            this.starty++;
+        }
+    }
 };
 
 /* Check if the level is solvable */
@@ -81,8 +94,8 @@ Level.prototype.impossible = function() {
     var stack = [];
     var bad = {};
     var lvl = this.clone();
-    var x = 0;
-    var y = 0;
+    var x = lvl.startx;
+    var y = lvl.starty;
     stack.push([x, y]);
     lvl.visit(x, y);
     while(!lvl.checkWin() && stack.length > 0) {
@@ -177,9 +190,6 @@ Level.prototype.clone = function() {
 /* Game constructor */
 var Game = function() {
     this.level = new Level(8, 8);
-    this.posx = 0;
-    this.posy = 0;
-    this.level.visit(0, 0);
 };
 
 /* Game rendering routine */
