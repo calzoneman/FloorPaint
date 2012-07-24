@@ -1,11 +1,20 @@
+// [GLOBALS]
 var canvas, ctx;
 var game;
+var time = {
+    genNoise     : 0,
+    impossible   : 0,
+    stackpush    : 0,
+    stackpop     : 0
+};
+
+// [CONSTANTS]
 const SIZE = 16;
 const TILE_EMPTY = 0;
 const TILE_PAINTED = 1;
 const TILE_WALL = 2;
 
-/* Called when the page loads */
+// [CONTROL]
 function init() {
     canvas = document.getElementById('game');
     ctx = canvas.getContext('2d');
@@ -31,11 +40,36 @@ function newlevel() {
 
 function resetlevel() {
     game.level.reset();
-    game.posx = 0;
-    game.posy = 0;
+    game.posx = game.level.startx;
+    game.posy = game.level.starty;
     game.level.visit(0, 0);
     document.getElementById('win').innerHTML = "";
 }
+
+// [UTIL]
+var StringStack = function() {
+    this.str = "";
+};
+
+StringStack.prototype.push = function(primitive) {
+    var s = new Date().getTime();
+    this.str += "," + primitive;
+    time["stackpush"] += new Date().getTime() - s;
+};
+
+StringStack.prototype.pop = function() {
+    var s = new Date().getTime();
+    var idx = this.str.lastIndexOf(",");
+    if(idx == -1) {
+        return null;
+    }
+    var result = this.str.slice(idx+1, this.str.length);
+    this.str = this.str.slice(0, idx);
+    time["stackpop"] += new Date().getTime() - s;
+    return result;
+};
+
+// [LEVEL]
 
 /* Level constructor */
 var Level = function(width, height) {
@@ -48,20 +82,27 @@ var Level = function(width, height) {
 
 /* Level generation routine */
 Level.prototype.generate = function() {
+    var s = new Date().getTime();
     var noiseAmt = 5;
     this.genNoise(noiseAmt);
+    //this.genRectangles(3, 2, 2, 5, 5);
     var tries = 0;
     while(this.impossible()) {
         if(tries % 1000 == 0) {
-            //alert("Tries: " + tries);
+            //alert(JSON.stringify(time));
         }
         tries++;
+        //this.genRectangles(3, 2, 2, 5, 5);
         this.genNoise(noiseAmt);
     }
+    alert("Level generation took " + tries + " tries, " + (new Date().getTime() - s) + "ms");
+    alert(JSON.stringify(time));
 };
 
-/* Random Level Generation */
+// [LEVEL GENERATION]
+
 Level.prototype.genNoise = function(amt) {
+    var s = new Date().getTime();
     for(var i = 0; i < this.width * this.height; i++) {
         this.map[i] = TILE_EMPTY;
     }
@@ -87,55 +128,106 @@ Level.prototype.genNoise = function(amt) {
             this.starty++;
         }
     }
+    time["genNoise"] += new Date().getTime() - s;
 };
+
+Level.prototype.genRectangles = function(n, minw, minh, maxw, maxh) {
+    var s = new Date().getTime();
+    this.startx = 0;
+    this.starty = 0;
+    for(var i = 0; i < this.width * this.height; i++) {
+        this.map[i] = TILE_EMPTY;
+    }
+
+
+    for(var i = 0; i < n; i++) {
+        var x = Math.floor(Math.random() * (this.width / 10 - 10) + 10);
+        var y = Math.floor(Math.random() * (this.height / 10 - 10) + 10);
+        var width = Math.random() * (maxw-minw) + minw;
+        var height = Math.random() * (maxh-minh) + minh;
+        for(var xx = 0; xx < width; xx++) {
+            if(x + xx >= this.width) {
+                break;
+            }
+            for(var yy = 0; yy < height; yy++) {
+                if(y + yy >= this.height) {
+                    continue;
+                }
+                this.map[(y+yy) * this.width + (x+xx)] = TILE_WALL;
+            }
+        }
+    }
+
+    while(this.map[this.starty * this.width + this.startx] == TILE_WALL) {
+        this.startx++;
+        if(this.startx >= this.width) {
+            this.startx = 0;
+            this.starty++;
+        }
+    }
+
+    time["genRectangles"] += new Date().getTime() - s;
+};
+
+function stringifywrap(obj) {
+    var s = new Date().getTime();
+    var str = JSON.stringify(obj);
+    time["stringify"] += new Date().getTime() - s;
+    return str;
+}
 
 /* Check if the level is solvable */
 Level.prototype.impossible = function() {
-    var stack = [];
+    var s = new Date().getTime();
+    var stack = new StringStack();
     var bad = {};
     var lvl = this.clone();
     var x = lvl.startx;
     var y = lvl.starty;
-    stack.push([x, y]);
+    stack.push(x)
+    stack.push(y);
     lvl.visit(x, y);
-    while(!lvl.checkWin() && stack.length > 0) {
+    while(!lvl.checkWin() && stack.str.length > 0) {
         var rand = Math.floor(Math.random() * 4);
-        if(bad[JSON.stringify(stack)] !== undefined) {
-            var tmp = stack.pop();
+        if(bad[stack.str] !== undefined) {
             lvl.map[y * lvl.width + x] = TILE_EMPTY;
-            x = tmp[0];
-            y = tmp[1];
+            y = stack.pop();
+            x = stack.pop();
         }
         if(lvl.validMove(x+1, y)) {
             x++;
             lvl.visit(x, y);
-            stack.push([x, y]);
+            stack.push(x);
+            stack.push(y);
         }
         else if(lvl.validMove(x-1, y)) {
             x--;
             lvl.visit(x, y);
-            stack.push([x, y]);
+            stack.push(x);
+            stack.push(y);
         }
         else if(lvl.validMove(x, y+1)) {
             y++;
             lvl.visit(x, y);
-            stack.push([x, y]);
+            stack.push(x);
+            stack.push(y);
         }
         else if(lvl.validMove(x, y-1)) {
             y--;
             lvl.visit(x, y);
-            stack.push([x, y]);
+            stack.push(x);
+            stack.push(y);
         }
         else if(!lvl.checkWin()) {
-            bad[JSON.stringify(stack)] = true;
+            bad[stack.str] = true;
             lvl.map[y * lvl.width + x] = TILE_EMPTY;
-            var tmp = stack.pop();
-            x = tmp[0];
-            y = tmp[1];
+            y = stack.pop();
+            x = stack.pop();
         }
 
     }
 
+    time["impossible"] += new Date().getTime() - s;
     return !lvl.checkWin();
 };
 
@@ -186,6 +278,8 @@ Level.prototype.clone = function() {
     }
     return lvl;
 };
+
+// [GAME]
 
 /* Game constructor */
 var Game = function() {
